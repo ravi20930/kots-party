@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, PrismaClientKnownRequestError } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -23,7 +23,7 @@ export async function GET() {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       console.error("Prisma error:", error.code, error.message);
       return NextResponse.json(
         { error: "Database error", code: error.code },
