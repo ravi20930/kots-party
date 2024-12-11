@@ -20,6 +20,7 @@ export default function AdminPage() {
   const router = useRouter()
   const [parties, setParties] = useState<Party[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     if (session?.user?.email !== 'ravi.20930@gmail.com') {
@@ -79,13 +80,29 @@ export default function AdminPage() {
     )
   }
 
+  const displayedParties = showAll ? parties : parties.filter(party => !party.isVerified)
+  const pendingCount = parties.filter(party => !party.isVerified).length
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-6">Admin Dashboard</h1>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+            <p className="text-gray-400 mt-1">
+              {pendingCount} {pendingCount === 1 ? 'party' : 'parties'} pending verification
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            {showAll ? 'Show Pending Only' : 'Show All Parties'}
+          </button>
+        </div>
         
         <div className="space-y-4">
-          {parties.map((party) => (
+          {displayedParties.map((party) => (
             <div
               key={party.id}
               className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 shadow-xl"
@@ -134,8 +151,10 @@ export default function AdminPage() {
             </div>
           ))}
 
-          {parties.length === 0 && (
-            <p className="text-gray-400 text-center py-8">No parties to review</p>
+          {displayedParties.length === 0 && (
+            <p className="text-gray-400 text-center py-8">
+              {showAll ? 'No parties found' : 'No pending parties to review'}
+            </p>
           )}
         </div>
       </div>
