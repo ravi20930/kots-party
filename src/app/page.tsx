@@ -120,7 +120,8 @@ export default function Home() {
             {parties.map((party) => (
               <div
                 key={party.id}
-                className="bg-gray-800/50 backdrop-blur-lg rounded-xl overflow-hidden hover:transform hover:scale-[1.02] transition-all duration-300"
+                className="bg-gray-800/50 backdrop-blur-lg rounded-xl overflow-hidden hover:transform hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+                onClick={() => router.push(`/party/${party.id}`)}
               >
                 <div className="p-6">
                   <div className="relative">
@@ -172,6 +173,17 @@ export default function Home() {
                           Sign in to RSVP
                         </button>
                       )}
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/party/${party.id}`)
+                        }}
+                        className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4]"
+                      >
+                        View Details
+                      </button>
                     </div>
                   </div>
                 </div>

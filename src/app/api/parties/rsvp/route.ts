@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { partyId } = body
+    const { partyId, alcoholRequest, suggestion } = body
 
     if (!partyId) {
       return NextResponse.json({ message: 'Party ID is required' }, { status: 400 })
@@ -20,6 +20,9 @@ export async function POST(req: Request) {
     // Check if party exists and is verified
     const party = await prisma.party.findUnique({
       where: { id: partyId },
+      include: {
+        rsvps: true,
+      },
     })
 
     if (!party) {
@@ -43,11 +46,7 @@ export async function POST(req: Request) {
     }
 
     // Check if party is full
-    const rsvpCount = await prisma.rSVP.count({
-      where: { partyId },
-    })
-
-    if (rsvpCount >= party.maxAttendees) {
+    if (party.rsvps.length >= party.maxAttendees) {
       return NextResponse.json({ message: 'Party is full' }, { status: 400 })
     }
 
@@ -57,6 +56,8 @@ export async function POST(req: Request) {
         partyId,
         userEmail: session.user.email,
         userName: session.user.name || 'Anonymous',
+        alcoholRequest,
+        suggestion,
       },
     })
 
@@ -76,16 +77,39 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const partyId = searchParams.get('partyId')
+    const userEmail = searchParams.get('userEmail')
 
     if (!partyId) {
       return NextResponse.json({ message: 'Party ID is required' }, { status: 400 })
+    }
+
+    if (!userEmail) {
+      return NextResponse.json({ message: 'User email is required' }, { status: 400 })
+    }
+
+    // Check if party exists
+    const party = await prisma.party.findUnique({
+      where: { id: partyId },
+    })
+
+    if (!party) {
+      return NextResponse.json({ message: 'Party not found' }, { status: 404 })
+    }
+
+    // Only allow admin or party host or the RSVP owner to cancel
+    const isAdmin = session.user.email === 'ravi.20930@gmail.com'
+    const isHost = session.user.email === party.hostEmail
+    const isOwner = session.user.email === userEmail
+
+    if (!isAdmin && !isHost && !isOwner) {
+      return NextResponse.json({ message: 'Unauthorized to cancel this RSVP' }, { status: 401 })
     }
 
     // Delete RSVP
     await prisma.rSVP.deleteMany({
       where: {
         partyId,
-        userEmail: session.user.email,
+        userEmail,
       },
     })
 

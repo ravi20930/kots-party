@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 
 export default function SignIn() {
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const callbackUrl = searchParams?.get('callbackUrl') || '/'
 
   return (
     <div className="flex min-h-[80vh] flex-col items-center justify-center px-4">

@@ -1,76 +1,95 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Textarea } from './ui/textarea'
+import { Label } from './ui/label'
+import { toast } from 'sonner'
 
 interface RSVPFormProps {
-  createRSVP: (formData: FormData) => Promise<void>
-  alcoholRequestsAllowed: boolean
+  partyId: string
+  onSuccess?: () => void
 }
 
-export default function RSVPForm({
-  createRSVP,
-  alcoholRequestsAllowed,
-}: RSVPFormProps) {
+export default function RSVPForm({ partyId, onSuccess }: RSVPFormProps) {
+  const { data: session } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [alcoholRequest, setAlcoholRequest] = useState('')
+  const [suggestion, setSuggestion] = useState('')
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!session?.user?.email) {
+      toast.error('Please sign in to RSVP')
+      return
+    }
+
     setIsSubmitting(true)
-
     try {
-      const formData = new FormData(event.currentTarget)
-      await createRSVP(formData)
+      const response = await fetch('/api/parties/rsvp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partyId,
+          alcoholRequest,
+          suggestion,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to RSVP')
+      }
+
+      toast.success('RSVP submitted successfully! An admin will review your request.')
+      setAlcoholRequest('')
+      setSuggestion('')
+      if (onSuccess) {
+        onSuccess()
+      }
     } catch (error) {
-      console.error('Failed to RSVP:', error)
-      alert('Failed to RSVP. Please try again.')
+      toast.error(error instanceof Error ? error.message : 'Failed to RSVP')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {alcoholRequestsAllowed && (
-        <div>
-          <label
-            htmlFor="alcoholRequest"
-            className="block text-sm font-medium text-white mb-2"
-          >
-            Alcohol Request (optional)
-          </label>
-          <input
-            type="text"
+    <div className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 mt-6">
+      <h3 className="text-xl font-bold text-white mb-4">RSVP Details</h3>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="alcoholRequest">Alcohol Request (Optional)</Label>
+          <Input
             id="alcoholRequest"
-            name="alcoholRequest"
-            className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4ECDC4]"
-            placeholder="What would you like to bring?"
+            value={alcoholRequest}
+            onChange={(e) => setAlcoholRequest(e.target.value)}
+            placeholder="What would you like to bring? (e.g., Beer, Wine)"
+            className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
-      )}
 
-      <div>
-        <label
-          htmlFor="suggestion"
-          className="block text-sm font-medium text-white mb-2"
-        >
-          Suggestions (optional)
-        </label>
-        <textarea
-          id="suggestion"
-          name="suggestion"
-          rows={3}
-          className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4ECDC4]"
-          placeholder="Any suggestions for the party?"
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="suggestion">Suggestions (Optional)</Label>
+          <Textarea
+            id="suggestion"
+            value={suggestion}
+            onChange={(e) => setSuggestion(e.target.value)}
+            placeholder="Any suggestions for the party? (e.g., music, food)"
+            className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[100px]"
+          />
+        </div>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4] disabled:opacity-50"
-      >
-        {isSubmitting ? 'Submitting...' : 'RSVP to Party'}
-      </button>
-    </form>
+        <Button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4] disabled:opacity-50">
+          {isSubmitting ? 'Submitting...' : 'RSVP'}
+        </Button>
+      </form>
+    </div>
   )
 }
