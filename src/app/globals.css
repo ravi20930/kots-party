@@ -4,11 +4,44 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
+/* Ensure smooth scrolling and better touch response */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+  height: -webkit-fill-available;
+}
+
 body {
   font-family: 'Space Grotesk', sans-serif;
   background: #0F172A;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Improve touch targets for mobile */
+button, a {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  min-height: 44px; /* iOS minimum touch target size */
+  min-width: 44px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+/* Disable pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Smooth scrolling container */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Enhanced mobile animations */
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -21,13 +54,36 @@ body {
   100% { background-position: 0% 50%; }
 }
 
+/* Optimized animations for mobile */
+@media (prefers-reduced-motion: no-preference) {
+  .party-card {
+    animation: float 6s ease-in-out infinite;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Disable animations if user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .party-card {
+    animation: none;
+    transition: none;
+  }
+}
+
 .party-card {
-  animation: float 6s ease-in-out infinite;
-  transition: all 0.3s ease;
+  transform: translateZ(0); /* Enable hardware acceleration */
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
 }
 
 .party-card:hover {
   transform: translateY(-5px) scale(1.02);
+}
+
+.party-card:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
 }
 
 .gradient-text {
@@ -37,6 +93,13 @@ body {
   color: transparent;
   background-size: 200% 200%;
   animation: gradient 3s ease infinite;
+}
+
+/* Mobile-optimized loading spinner */
+.loading-spinner {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 @layer base {
