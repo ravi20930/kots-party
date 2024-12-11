@@ -6,6 +6,23 @@ import { useParams } from "next/navigation"
 import RSVPForm from "@/components/RSVPForm"
 import { toast } from "sonner"
 
+// Helper function to format dates
+const formatDate = (dateString: string | Date) => {
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return 'Invalid Date'
+  }
+}
+
 type Party = {
   id: string
   title: string
@@ -90,7 +107,7 @@ export default function PartyDetails() {
       <div className="space-y-4 mb-8">
         <p className="text-white">
           <span className="font-semibold">Date:</span>{" "}
-          {new Date(party.date).toLocaleDateString()}
+          {formatDate(party.date)}
         </p>
         <p className="text-white">
           <span className="font-semibold">Host:</span> {party.hostName}
@@ -181,7 +198,7 @@ export default function PartyDetails() {
                       {rsvp.user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                      {new Date(rsvp.createdAt).toLocaleString()}
+                      {formatDate(rsvp.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
