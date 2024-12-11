@@ -8,6 +8,7 @@ export default function HostParty() {
   const { data: session } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -19,6 +20,7 @@ export default function HostParty() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
 
     try {
       const res = await fetch('/api/parties', {
@@ -26,14 +28,22 @@ export default function HostParty() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          maxAttendees: parseInt(formData.maxAttendees),
+        }),
       })
 
-      if (!res.ok) throw new Error('Failed to create party')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(errorData?.message || 'Failed to create party')
+      }
+
       await res.json()
       router.push('/')
     } catch (error) {
       console.error('Error creating party:', error)
+      setError(error instanceof Error ? error.message : 'Failed to create party')
     } finally {
       setLoading(false)
     }
@@ -56,6 +66,13 @@ export default function HostParty() {
     <div className="min-h-screen p-8">
       <div className="max-w-md mx-auto bg-gray-800/50 rounded-xl p-6 backdrop-blur-lg shadow-xl">
         <h1 className="text-2xl font-bold text-white mb-6">Host a Block Party</h1>
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-100">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
@@ -100,6 +117,7 @@ export default function HostParty() {
               onChange={handleChange}
               required
               min="1"
+              max="100"
               className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               placeholder="10"
             />
@@ -117,7 +135,7 @@ export default function HostParty() {
               onChange={handleChange}
               required
               className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              placeholder="A-101"
+              placeholder="101"
             />
           </div>
 
@@ -140,16 +158,10 @@ export default function HostParty() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] text-white font-medium rounded-xl hover:opacity-90 transition-all duration-200 disabled:opacity-50"
+            className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4] disabled:opacity-50"
           >
             {loading ? 'Creating...' : 'Create Party'}
           </button>
-
-          {!session?.user?.email?.includes('ravi.20930@gmail.com') && (
-            <p className="text-sm text-gray-400 mt-4">
-              Note: Your party will need to be verified by an admin before it becomes visible.
-            </p>
-          )}
         </form>
       </div>
     </div>
