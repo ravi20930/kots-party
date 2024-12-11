@@ -1,10 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model Account {
@@ -13,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -41,10 +40,10 @@ model User {
   emailVerified DateTime?
   image         String?
   accounts      Account[]
-  sessions      Session[]
-  parties       Party[]
   attendances   Attendee[]
+  parties       Party[]
   rsvps         RSVP[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -66,8 +65,8 @@ model Party {
   isVerified   Boolean    @default(false)
   createdAt    DateTime   @default(now())
   hostId       String
-  host         User       @relation(fields: [hostId], references: [id])
   attendees    Attendee[]
+  host         User       @relation(fields: [hostId], references: [id])
   rsvps        RSVP[]
 }
 
@@ -77,14 +76,14 @@ model Attendee {
   suggestion     String?
   userId         String
   partyId        String
-  user           User    @relation(fields: [userId], references: [id])
   party          Party   @relation(fields: [partyId], references: [id])
+  user           User    @relation(fields: [userId], references: [id])
 
   @@unique([userId, partyId])
 }
 
 model RSVP {
-  id             String  @id @default(cuid())
+  id             String   @id @default(cuid())
   party          Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
   partyId        String
   user           User     @relation(fields: [userEmail], references: [email], onDelete: Cascade)
@@ -92,6 +91,7 @@ model RSVP {
   userName       String
   alcoholRequest String?
   suggestion     String?
+  isVerified     Boolean  @default(false)
   createdAt      DateTime @default(now())
 
   @@unique([partyId, userEmail])

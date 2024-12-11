@@ -41,6 +41,7 @@ type Party = {
       name: string | null
       email: string
     }
+    isVerified: boolean
   }>
 }
 
@@ -56,6 +57,9 @@ export default function PartyDetails() {
   const isAdmin = session?.user?.email === 'ravi.20930@gmail.com'
   const isHost = session?.user?.email === party?.hostEmail
   const canManageRSVPs = isAdmin || isHost
+
+  const verifiedRSVPs = party?.attendees.filter(rsvp => rsvp.isVerified) || [];
+  const remainingSeats = party ? party.maxAttendees - verifiedRSVPs.length : 0;
 
   const fetchParty = useCallback(async () => {
     try {
@@ -94,6 +98,33 @@ export default function PartyDetails() {
     }
   }
 
+  const verifyRSVP = async (rsvpId: string) => {
+    try {
+      if (!params?.id) {
+        throw new Error('Party ID not found');
+      }
+
+      const response = await fetch('/api/party/rsvp/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rsvpId, partyId: params.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to verify RSVP');
+      }
+
+      // Refresh party data
+      fetchParty()
+      toast.success('RSVP verified successfully');
+    } catch (error) {
+      console.error('Error verifying RSVP:', error);
+      toast.error('Failed to verify RSVP');
+    }
+  };
+
   if (loading) return <div className="text-white">Loading...</div>
   if (error) return <div className="text-white">Error: {error}</div>
   if (!party) return <div className="text-white">Party not found</div>
@@ -102,8 +133,9 @@ export default function PartyDetails() {
   const spotsLeft = party.maxAttendees - party.attendees.length
 
   return (
-    <div className="max-w-2xl mx-auto bg-white bg-opacity-10 backdrop-blur-lg rounded-lg p-8">
+    <div className="bg-gray-900 shadow-xl rounded-lg p-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold text-white mb-6">{party.title}</h1>
+      
       <div className="space-y-4 mb-8">
         <p className="text-white">
           <span className="font-semibold">Date:</span>{" "}
@@ -113,11 +145,13 @@ export default function PartyDetails() {
           <span className="font-semibold">Host:</span> {party.hostName}
         </p>
         <p className="text-white">
-          <span className="font-semibold">Guests:</span> {party.attendees.length}/
-          {party.maxAttendees}
+          <span className="font-semibold">Flat:</span> {party.flatNo}
         </p>
         <p className="text-white">
-          <span className="font-semibold">Flat No:</span> {party.flatNo}
+          <span className="font-semibold">Remaining Seats:</span>{" "}
+          <span className={remainingSeats <= 5 ? "text-red-500" : "text-green-500"}>
+            {remainingSeats}
+          </span> out of {party.maxAttendees}
         </p>
       </div>
 
@@ -154,13 +188,17 @@ export default function PartyDetails() {
                   RSVP Now
                 </button>
               ) : (
-                <RSVPForm
-                  partyId={party.id}
-                  onSuccess={() => {
-                    fetchParty()
-                    setShowRSVPForm(false)
-                  }}
-                />
+                showRSVPForm && (
+                  <RSVPForm
+                    partyId={party.id}
+                    maxAttendees={party.maxAttendees}
+                    currentAttendees={party.attendees}
+                    onRSVP={() => {
+                      fetchParty();
+                      setShowRSVPForm(false);
+                    }}
+                  />
+                )
               )}
             </>
           )}
@@ -169,50 +207,76 @@ export default function PartyDetails() {
 
       {canManageRSVPs && party.attendees.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-xl font-bold text-white mb-4">Guest List ({party.attendees.length})</h2>
-          <div className="bg-gray-900/50 rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    RSVP Date
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {party.attendees.map((rsvp) => (
-                  <tr key={rsvp.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                      {rsvp.user.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                      {rsvp.user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                      {formatDate(rsvp.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => handleCancelRSVP(rsvp.user.email!)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        Cancel RSVP
-                      </button>
-                    </td>
+          <h2 className="text-xl font-semibold text-white mb-4">Attendees</h2>
+          {party.attendees.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      RSVP Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      Status
+                    </th>
+                    {isHost && (
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {party.attendees.map((rsvp) => (
+                    <tr key={rsvp.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {rsvp.user.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {rsvp.user.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {formatDate(rsvp.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          rsvp.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {rsvp.isVerified ? 'Verified' : 'Pending'}
+                        </span>
+                      </td>
+                      {isHost && (
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          {!rsvp.isVerified && (
+                            <button
+                              onClick={() => verifyRSVP(rsvp.id)}
+                              className="text-indigo-400 hover:text-indigo-300"
+                            >
+                              Verify
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleCancelRSVP(rsvp.user.email!)}
+                            className="ml-4 text-red-400 hover:text-red-300"
+                          >
+                            Cancel
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-300">No attendees yet.</p>
+          )}
         </div>
       )}
     </div>
