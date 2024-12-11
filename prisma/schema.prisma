@@ -35,15 +35,15 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
-  hostedParties Party[]   @relation("HostedParties")
-  rsvps         RSVP[]
+  parties       Party[]
+  attendances   Attendee[]
 }
 
 model VerificationToken {
@@ -55,31 +55,28 @@ model VerificationToken {
 }
 
 model Party {
-  id              String   @id @default(cuid())
-  name            String
-  date            DateTime
-  maxGuests       Int
-  maleRatio      Int?
-  femaleRatio    Int?
-  entryType       String
-  alcoholRequests Boolean  @default(false)
-  hostId          String
-  host            User     @relation("HostedParties", fields: [hostId], references: [id])
-  rsvps           RSVP[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String     @id @default(cuid())
+  title        String
+  date         DateTime
+  maxAttendees Int
+  flatNo       String
+  hostName     String
+  hostEmail    String
+  isVerified   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  hostId       String
+  host         User       @relation(fields: [hostId], references: [id])
+  attendees    Attendee[]
 }
 
-model RSVP {
-  id             String   @id @default(cuid())
-  userId         String
-  partyId        String
+model Attendee {
+  id             String  @id @default(cuid())
   alcoholRequest String?
   suggestion     String?
-  user           User     @relation(fields: [userId], references: [id])
-  party          Party    @relation(fields: [partyId], references: [id])
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  userId         String
+  partyId        String
+  user           User    @relation(fields: [userId], references: [id])
+  party          Party   @relation(fields: [partyId], references: [id])
 
   @@unique([userId, partyId])
 }
