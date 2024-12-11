@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 export async function GET() {
-  // Create a new client for each request
-  const prisma = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
-  });
-
   try {
     const parties = await prisma.party.findMany({
       include: {
@@ -31,7 +27,7 @@ export async function GET() {
       console.error("Prisma error:", error.code, error.message);
       return NextResponse.json(
         { error: "Database error", code: error.code },
-        { status: 500 }
+        { status: 400 }
       );
     }
 
