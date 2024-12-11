@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FiUsers, FiCalendar, FiMapPin } from 'react-icons/fi';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface Party {
   id: string;
@@ -15,12 +16,18 @@ interface Party {
   hostEmail: string;
   isVerified: boolean;
   createdAt: string;
+  _count?: {
+    rsvps: number
+  }
 }
 
 export default function Home() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [parties, setParties] = useState<Party[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rsvpLoading, setRsvpLoading] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchParties();
@@ -34,8 +41,38 @@ export default function Home() {
       setParties(data);
     } catch (error) {
       console.error('Error fetching parties:', error);
+      setError('Failed to load parties');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRSVP = async (partyId: string) => {
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    setRsvpLoading(partyId);
+    try {
+      const res = await fetch('/api/parties/rsvp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ partyId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to RSVP');
+
+      // Refresh parties to update RSVP count
+      await fetchParties();
+    } catch (error) {
+      console.error('Error RSVPing:', error);
+      setError(error instanceof Error ? error.message : 'Failed to RSVP');
+    } finally {
+      setRsvpLoading(null);
     }
   };
 
@@ -58,6 +95,12 @@ export default function Home() {
             Join the hottest block parties in your area. Connect, dance, and create memories! 🎉
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-100">
+            {error}
+          </div>
+        )}
 
         {parties.length === 0 ? (
           <div className="text-center py-12">
@@ -102,6 +145,33 @@ export default function Home() {
                       <p className="text-gray-400">
                         Hosted by {party.hostName}
                       </p>
+                    </div>
+                    <div className="mt-4">
+                      {session ? (
+                        party._count?.rsvps === party.maxAttendees ? (
+                          <button
+                            disabled
+                            className="w-full px-4 py-2 text-white bg-gray-600 rounded-lg font-medium opacity-50"
+                          >
+                            Party Full
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleRSVP(party.id)}
+                            disabled={rsvpLoading === party.id}
+                            className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4] disabled:opacity-50"
+                          >
+                            {rsvpLoading === party.id ? 'Processing...' : 'RSVP Now'}
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => router.push('/auth/signin')}
+                          className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90"
+                        >
+                          Sign in to RSVP
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

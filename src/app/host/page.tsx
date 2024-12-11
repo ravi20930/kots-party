@@ -9,6 +9,7 @@ export default function HostParty() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -21,6 +22,7 @@ export default function HostParty() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess(false)
 
     try {
       const res = await fetch('/api/parties', {
@@ -40,7 +42,19 @@ export default function HostParty() {
       }
 
       await res.json()
-      router.push('/')
+      setSuccess(true)
+      // Clear form
+      setFormData({
+        title: '',
+        date: '',
+        maxAttendees: '',
+        flatNo: '',
+        hostName: session?.user?.name || '',
+      })
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        router.push('/')
+      }, 3000)
     } catch (error) {
       console.error('Error creating party:', error)
       setError(error instanceof Error ? error.message : 'Failed to create party')
@@ -70,6 +84,12 @@ export default function HostParty() {
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-100">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-100">
+            Party request submitted successfully! An admin will review your request. Redirecting...
           </div>
         )}
 
