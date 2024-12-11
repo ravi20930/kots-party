@@ -28,7 +28,7 @@ export default function RSVPForm({ partyId, onSuccess }: RSVPFormProps) {
 
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/parties/rsvp', {
+      const response = await fetch('/api/party/rsvp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

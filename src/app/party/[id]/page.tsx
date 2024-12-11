@@ -42,7 +42,7 @@ export default function PartyDetails() {
 
   const fetchParty = useCallback(async () => {
     try {
-      const res = await fetch(`/api/parties/${id}`)
+      const res = await fetch(`/api/party?id=${id}`)
       if (!res.ok) throw new Error('Failed to fetch party')
       const data = await res.json()
       setParty(data)
@@ -61,7 +61,7 @@ export default function PartyDetails() {
     if (!canManageRSVPs) return
 
     try {
-      const res = await fetch(`/api/parties/rsvp?partyId=${id}&userEmail=${userEmail}`, {
+      const res = await fetch(`/api/party/rsvp?partyId=${id}&userEmail=${userEmail}`, {
         method: 'DELETE',
       })
 

@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const party = await prisma.party.findUnique({
       where: { id: partyId },
       include: {
-        rsvps: true,
+        attendees: true,
       },
     })
 
@@ -29,15 +29,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Party not found' }, { status: 404 })
     }
 
-    if (!party.isVerified) {
-      return NextResponse.json({ message: 'Party is not verified yet' }, { status: 400 })
-    }
-
     // Check if user already RSVPed
-    const existingRSVP = await prisma.rSVP.findFirst({
+    const existingRSVP = await prisma.attendee.findFirst({
       where: {
         partyId,
-        userEmail: session.user.email,
+        user: {
+          email: session.user.email
+        }
       },
     })
 
@@ -46,18 +44,33 @@ export async function POST(req: Request) {
     }
 
     // Check if party is full
-    if (party.rsvps.length >= party.maxAttendees) {
+    if (party.attendees.length >= party.maxAttendees) {
       return NextResponse.json({ message: 'Party is full' }, { status: 400 })
     }
 
     // Create RSVP
-    const rsvp = await prisma.rSVP.create({
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email! }
+    })
+
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 })
+    }
+
+    const rsvp = await prisma.attendee.create({
       data: {
         partyId,
-        userEmail: session.user.email,
-        userName: session.user.name || 'Anonymous',
+        userId: user.id,
         alcoholRequest,
         suggestion,
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
       },
     })
 
@@ -102,20 +115,29 @@ export async function DELETE(req: Request) {
     const isOwner = session.user.email === userEmail
 
     if (!isAdmin && !isHost && !isOwner) {
-      return NextResponse.json({ message: 'Unauthorized to cancel this RSVP' }, { status: 401 })
+      return NextResponse.json({ message: 'Not authorized to cancel this RSVP' }, { status: 403 })
+    }
+
+    // Find the user
+    const user = await prisma.user.findUnique({
+      where: { email: userEmail }
+    })
+
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 })
     }
 
     // Delete RSVP
-    await prisma.rSVP.deleteMany({
+    await prisma.attendee.deleteMany({
       where: {
         partyId,
-        userEmail,
+        userId: user.id
       },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: 'RSVP cancelled successfully' })
   } catch (error) {
-    console.error('Error canceling RSVP:', error)
-    return NextResponse.json({ message: 'Error canceling RSVP' }, { status: 500 })
+    console.error('Error cancelling RSVP:', error)
+    return NextResponse.json({ message: 'Error cancelling RSVP' }, { status: 500 })
   }
 }
