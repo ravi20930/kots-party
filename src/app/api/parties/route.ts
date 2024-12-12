@@ -133,7 +133,7 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email || session.user.email !== ADMIN_EMAIL) {
+  if (!session?.user?.email || session.user.email !== "ravi.20930@gmail.com") {
     return NextResponse.json(
       {
         message: "Unauthorized",
@@ -155,24 +155,15 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // Get party from database
-    const party = await prisma.party.findUnique({
-      where: { id },
-    });
-
-    if (!party) {
-      return NextResponse.json(
-        {
-          message: "Party not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Delete party
-    await prisma.party.delete({
-      where: { id },
-    });
+    // Delete party and all related RSVPs in a single transaction
+    await prisma.$transaction([
+      prisma.rSVP.deleteMany({
+        where: { partyId: id },
+      }),
+      prisma.party.delete({
+        where: { id },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

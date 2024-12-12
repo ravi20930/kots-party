@@ -113,19 +113,6 @@ export default function PartyDetails() {
     toast.loading("Deleting party...");
 
     try {
-      // First delete all RSVPs
-      await Promise.all(
-        party.rsvps.map((rsvp) =>
-          fetch(
-            `/api/party/rsvp?partyId=${party.id}&userEmail=${rsvp.userEmail}`,
-            {
-              method: "DELETE",
-            }
-          )
-        )
-      );
-
-      // Then delete the party
       const res = await fetch(`/api/parties?id=${party.id}`, {
         method: "DELETE",
       });
