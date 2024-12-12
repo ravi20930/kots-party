@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import RSVPForm from "@/components/RSVPForm";
 import { toast } from "sonner";
 
@@ -34,6 +34,7 @@ type Party = {
   flatNo: string;
   hostName: string;
   hostEmail: string;
+  isVerified: boolean;
   rsvps: Array<{
     id: string;
     userEmail: string;
@@ -53,6 +54,7 @@ export default function PartyDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRSVPForm, setShowRSVPForm] = useState(false);
+  const router = useRouter();
 
   const isAdmin = session?.user?.email === "ravi.20930@gmail.com";
   const isHost = session?.user?.email === party?.hostEmail;
@@ -141,7 +143,63 @@ export default function PartyDetails() {
 
   return (
     <div className="bg-gray-900 shadow-xl rounded-lg p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-white mb-6">{party.title}</h1>
+      <div className="flex justify-between items-start mb-6">
+        <h1 className="text-3xl font-bold text-white">{party.title}</h1>
+        {isAdmin && (
+          <div className="flex gap-2">
+            {!party.isVerified && (
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(
+                      `/api/parties/verify?id=${party.id}`,
+                      {
+                        method: "POST",
+                      }
+                    );
+                    if (!res.ok) throw new Error("Failed to verify party");
+                    fetchParty();
+                    toast.success("Party verified successfully");
+                  } catch (error) {
+                    console.error("Error:", error);
+                    toast.error("Failed to verify party");
+                  }
+                }}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Verify Party
+              </button>
+            )}
+            <button
+              onClick={async () => {
+                if (!confirm("Are you sure you want to delete this party?"))
+                  return;
+                try {
+                  const res = await fetch(`/api/parties?id=${party.id}`, {
+                    method: "DELETE",
+                  });
+                  if (!res.ok) throw new Error("Failed to delete party");
+                  toast.success("Party deleted successfully");
+                  router.push("/");
+                } catch (error) {
+                  console.error("Error:", error);
+                  toast.error("Failed to delete party");
+                }
+              }}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Delete Party
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!party.isVerified && isAdmin && (
+        <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500 rounded-lg text-yellow-100">
+          This party is pending verification. Click the verify button above to
+          approve it.
+        </div>
+      )}
 
       <div className="space-y-4 mb-8">
         <p className="text-white">
