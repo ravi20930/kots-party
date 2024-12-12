@@ -21,6 +21,25 @@ interface Party {
   };
 }
 
+// Helper function to format dates
+const formatDate = (dateString: string | Date) => {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata",
+    });
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Invalid Date";
+  }
+};
+
 export default function Home() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -123,7 +142,7 @@ export default function Home() {
                     <div className="flex flex-wrap items-center gap-3 md:gap-4 text-gray-300 text-sm md:text-base">
                       <span className="flex items-center">
                         <FiCalendar className="mr-2" />
-                        {new Date(party.date).toLocaleDateString()}
+                        {formatDate(party.date)}
                       </span>
                       <span className="flex items-center">
                         <FiUsers className="mr-2" />

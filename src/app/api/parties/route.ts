@@ -5,6 +5,13 @@ import prisma from "@/lib/prisma";
 
 const ADMIN_EMAIL = "ravi.20930@gmail.com";
 
+// Helper function to convert to IST
+function convertToIST(date: string | Date) {
+  const d = new Date(date);
+  // Add 5 hours and 30 minutes for IST
+  return new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -50,11 +57,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create party with verification status
+    // Create party with verification status and IST date
     const party = await prisma.party.create({
       data: {
         title,
-        date: new Date(date),
+        date: convertToIST(date),
         maxAttendees,
         flatNo,
         hostName,
@@ -98,12 +105,17 @@ export async function GET() {
       },
     });
 
+    // Format dates to IST before sending
+    const partiesWithISTDates = parties.map((party) => ({
+      ...party,
+      date: convertToIST(party.date),
+    }));
+
     // If admin, return all parties. Otherwise, filter verified ones
     const filteredParties = isAdmin
-      ? parties
-      : parties.filter((p) => p.isVerified);
+      ? partiesWithISTDates
+      : partiesWithISTDates.filter((p) => p.isVerified);
 
-    // Return with proper content type and encoding
     return new Response(JSON.stringify(filteredParties), {
       headers: {
         "Content-Type": "application/json; charset=utf-8",
