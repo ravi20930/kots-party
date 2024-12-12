@@ -37,7 +37,6 @@ export default function PartyDetails() {
   const router = useRouter();
 
   // Loading states
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -50,6 +49,9 @@ export default function PartyDetails() {
   const isAdmin = session?.user?.email === "ravi.20930@gmail.com";
   const isHost = session?.user?.email === party?.hostEmail;
   const canManageParty = isAdmin || isHost;
+
+  const verifiedRSVPs = party?.rsvps.filter((rsvp) => rsvp.isVerified) || [];
+  const remainingSeats = party ? party.maxAttendees - verifiedRSVPs.length : 0;
 
   const fetchParty = useCallback(async () => {
     try {
@@ -105,13 +107,7 @@ export default function PartyDetails() {
   };
 
   const handleDelete = async () => {
-    if (
-      !party ||
-      !confirm(
-        "Are you sure you want to delete this party? This action cannot be undone."
-      )
-    )
-      return;
+    if (!party) return;
 
     setIsDeleting(true);
     toast.loading("Deleting party...");
@@ -163,7 +159,7 @@ export default function PartyDetails() {
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white"
+                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white p-2"
               />
             </div>
             <div>
@@ -174,7 +170,7 @@ export default function PartyDetails() {
                 type="datetime-local"
                 value={editDate}
                 onChange={(e) => setEditDate(e.target.value)}
-                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white"
+                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white p-2"
               />
             </div>
             <div>
@@ -187,7 +183,7 @@ export default function PartyDetails() {
                 onChange={(e) => setEditMaxAttendees(parseInt(e.target.value))}
                 min="1"
                 max="100"
-                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white"
+                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white p-2"
               />
             </div>
             <div>
@@ -198,7 +194,7 @@ export default function PartyDetails() {
                 type="text"
                 value={editFlatNo}
                 onChange={(e) => setEditFlatNo(e.target.value)}
-                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white"
+                className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white p-2"
               />
             </div>
             <div className="flex gap-4 mt-6">
@@ -256,56 +252,6 @@ export default function PartyDetails() {
             >
               Edit Party
             </button>
-            {isAdmin && !party.isVerified && (
-              <button
-                disabled={isVerifying}
-                onClick={async () => {
-                  setIsVerifying(true);
-                  toast.loading("Verifying party...");
-                  try {
-                    const res = await fetch(
-                      `/api/parties/verify?id=${party.id}`,
-                      {
-                        method: "POST",
-                      }
-                    );
-                    if (!res.ok) throw new Error("Failed to verify party");
-                    await fetchParty();
-                    toast.success("Party verified successfully");
-                  } catch (error) {
-                    console.error("Error:", error);
-                    toast.error("Failed to verify party");
-                  } finally {
-                    setIsVerifying(false);
-                  }
-                }}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isVerifying ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    <span>Verifying...</span>
-                  </>
-                ) : (
-                  "Verify Party"
-                )}
-              </button>
-            )}
             <button
               disabled={isDeleting}
               onClick={handleDelete}
@@ -337,6 +283,28 @@ export default function PartyDetails() {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="space-y-4 mb-8">
+        <p className="text-white">
+          <span className="font-semibold">Date:</span>{" "}
+          {format(new Date(party.date), "dd MMM yyyy, hh:mm a")}
+        </p>
+        <p className="text-white">
+          <span className="font-semibold">Host:</span> {party.hostName}
+        </p>
+        <p className="text-white">
+          <span className="font-semibold">Flat:</span> {party.flatNo}
+        </p>
+        <p className="text-white">
+          <span className="font-semibold">Remaining Seats:</span>{" "}
+          <span
+            className={remainingSeats <= 5 ? "text-red-500" : "text-green-500"}
+          >
+            {remainingSeats}
+          </span>{" "}
+          out of {party.maxAttendees}
+        </p>
       </div>
 
       {/* Rest of the party details... */}
