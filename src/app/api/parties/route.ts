@@ -5,6 +5,15 @@ import prisma from "@/lib/prisma";
 
 const ADMIN_EMAIL = "ravi.20930@gmail.com";
 
+// Helper function to convert local time to UTC
+function convertToUTC(dateStr: string) {
+  // Parse the input date string (which is in IST)
+  const date = new Date(dateStr);
+
+  // Subtract 5 hours and 30 minutes to convert from IST to UTC
+  return new Date(date.getTime() - 5.5 * 60 * 60 * 1000);
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -50,11 +59,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create party with verification status and proper date handling
+    // Convert the input date (IST) to UTC before storing
+    const utcDate = convertToUTC(date);
+
+    // Create party with verification status and UTC date
     const party = await prisma.party.create({
       data: {
         title,
-        date: new Date(date), // Store as UTC in database
+        date: utcDate,
         maxAttendees,
         flatNo,
         hostName,

@@ -1,86 +1,97 @@
-'use client'
+"use client";
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+// Helper function to format date for input
+function formatDateForInput(date: Date) {
+  const offset = 5.5 * 60; // 5 hours and 30 minutes in minutes
+  const localDate = new Date(date.getTime() + offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16); // Format as YYYY-MM-DDTHH:mm
+}
 
 export default function HostParty() {
-  const { data: session } = useSession()
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    date: '',
-    maxAttendees: '',
-    flatNo: '',
-    hostName: session?.user?.name || '',
-  })
+    title: "",
+    date: formatDateForInput(new Date()),
+    maxAttendees: "",
+    flatNo: "",
+    hostName: session?.user?.name || "",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess(false)
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess(false);
 
     try {
-      const res = await fetch('/api/parties', {
-        method: 'POST',
+      const res = await fetch("/api/parties", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
           maxAttendees: parseInt(formData.maxAttendees),
         }),
-      })
+      });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        throw new Error(errorData?.message || 'Failed to create party')
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.message || "Failed to create party");
       }
 
-      await res.json()
-      setSuccess(true)
+      await res.json();
+      setSuccess(true);
       // Clear form
       setFormData({
-        title: '',
-        date: '',
-        maxAttendees: '',
-        flatNo: '',
-        hostName: session?.user?.name || '',
-      })
+        title: "",
+        date: formatDateForInput(new Date()),
+        maxAttendees: "",
+        flatNo: "",
+        hostName: session?.user?.name || "",
+      });
       // Redirect after 3 seconds
       setTimeout(() => {
-        router.push('/')
-      }, 3000)
+        router.push("/");
+      }, 3000);
     } catch (error) {
-      console.error('Error creating party:', error)
-      setError(error instanceof Error ? error.message : 'Failed to create party')
+      console.error("Error creating party:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to create party"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-white">Please sign in to host a party</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-md mx-auto bg-gray-800/50 rounded-xl p-6 backdrop-blur-lg shadow-xl">
-        <h1 className="text-2xl font-bold text-white mb-6">Host a Block Party</h1>
-        
+        <h1 className="text-2xl font-bold text-white mb-6">
+          Host a Block Party
+        </h1>
+
         {error && (
           <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-100">
             {error}
@@ -89,13 +100,17 @@ export default function HostParty() {
 
         {success && (
           <div className="mb-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-100">
-            Party request submitted successfully! An admin will review your request. Redirecting...
+            Party request submitted successfully! An admin will review your
+            request. Redirecting...
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-300 mb-1"
+            >
               Party Title
             </label>
             <input
@@ -111,7 +126,10 @@ export default function HostParty() {
           </div>
 
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-300 mb-1">
+            <label
+              htmlFor="date"
+              className="block text-sm font-medium text-gray-300 mb-1"
+            >
               Date & Time
             </label>
             <input
@@ -126,7 +144,10 @@ export default function HostParty() {
           </div>
 
           <div>
-            <label htmlFor="maxAttendees" className="block text-sm font-medium text-gray-300 mb-1">
+            <label
+              htmlFor="maxAttendees"
+              className="block text-sm font-medium text-gray-300 mb-1"
+            >
               Max Attendees
             </label>
             <input
@@ -144,7 +165,10 @@ export default function HostParty() {
           </div>
 
           <div>
-            <label htmlFor="flatNo" className="block text-sm font-medium text-gray-300 mb-1">
+            <label
+              htmlFor="flatNo"
+              className="block text-sm font-medium text-gray-300 mb-1"
+            >
               Flat Number
             </label>
             <input
@@ -160,7 +184,10 @@ export default function HostParty() {
           </div>
 
           <div>
-            <label htmlFor="hostName" className="block text-sm font-medium text-gray-300 mb-1">
+            <label
+              htmlFor="hostName"
+              className="block text-sm font-medium text-gray-300 mb-1"
+            >
               Host Name
             </label>
             <input
@@ -180,10 +207,10 @@ export default function HostParty() {
             disabled={loading}
             className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4] disabled:opacity-50"
           >
-            {loading ? 'Creating...' : 'Create Party'}
+            {loading ? "Creating..." : "Create Party"}
           </button>
         </form>
       </div>
     </div>
-  )
+  );
 }
