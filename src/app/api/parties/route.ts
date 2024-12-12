@@ -103,15 +103,20 @@ export async function GET() {
       ? parties
       : parties.filter((p) => p.isVerified);
 
-    return NextResponse.json(filteredParties);
+    // Return with proper content type and encoding
+    return new Response(JSON.stringify(filteredParties), {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
   } catch (error) {
     console.error("Error fetching parties:", error);
-    return NextResponse.json(
-      {
-        message: "Error fetching parties",
+    return new Response(JSON.stringify({ message: "Error fetching parties" }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
       },
-      { status: 500 }
-    );
+    });
   }
 }
 

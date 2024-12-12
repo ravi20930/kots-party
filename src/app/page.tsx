@@ -26,7 +26,6 @@ export default function Home() {
   const router = useRouter();
   const [parties, setParties] = useState<Party[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rsvpLoading, setRsvpLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -37,7 +36,8 @@ export default function Home() {
     try {
       const res = await fetch("/api/parties");
       if (!res.ok) throw new Error("Failed to fetch parties");
-      const data = await res.json();
+      const text = await res.text();
+      const data = JSON.parse(text.trim());
       setParties(data);
     } catch (error) {
       console.error("Error fetching parties:", error);
@@ -53,27 +53,8 @@ export default function Home() {
       return;
     }
 
-    setRsvpLoading(partyId);
-    try {
-      const res = await fetch("/api/parties/rsvp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ partyId }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to RSVP");
-
-      // Refresh parties to update RSVP count
-      await fetchParties();
-    } catch (error) {
-      console.error("Error RSVPing:", error);
-      setError(error instanceof Error ? error.message : "Failed to RSVP");
-    } finally {
-      setRsvpLoading(null);
-    }
+    // Instead of making an API call, navigate to the party details page
+    router.push(`/party/${partyId}`);
   };
 
   if (loading) {
@@ -174,12 +155,9 @@ export default function Home() {
                               e.stopPropagation();
                               handleRSVP(party.id);
                             }}
-                            disabled={rsvpLoading === party.id}
                             className="w-full px-4 py-2 text-white bg-gradient-to-r from-[#FF6B6B] to-[#4ECDC4] rounded-lg font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4ECDC4] disabled:opacity-50"
                           >
-                            {rsvpLoading === party.id
-                              ? "Processing..."
-                              : "RSVP Now"}
+                            RSVP Now
                           </button>
                         )
                       ) : (
