@@ -25,15 +25,16 @@ interface Party {
 const formatDate = (dateString: string | Date) => {
   try {
     const date = new Date(dateString);
-    return date.toLocaleString("en-IN", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
+    const options: Intl.DateTimeFormatOptions = {
       timeZone: "Asia/Kolkata",
-    });
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    };
+    return new Intl.DateTimeFormat("en-IN", options).format(date);
   } catch (error) {
     console.error("Error formatting date:", error);
     return "Invalid Date";
